@@ -25,6 +25,8 @@ func main() {
 	kingpin.CommandLine.Help = "Update ECS service."
 	kingpin.Parse()
 
+	fmt.Printf("*** service %s\n", *service)
+
 	if *task == "" {
 		task = service
 	}
@@ -36,6 +38,8 @@ func main() {
 	arn := ""
 	var err error
 
+	fmt.Printf("*** RegisterTaskDefinition image %s\n", *image)
+
 	if image != nil {
 		arn, err = c.RegisterTaskDefinition(task, image, tag)
 		if err != nil {
@@ -44,12 +48,14 @@ func main() {
 		}
 	}
 
+	fmt.Println("*** UpdateService")
 	err = c.UpdateService(cluster, service, count, &arn)
 	if err != nil {
 		logger.Printf("[error] update service: %s\n", err)
 		return
 	}
 
+	fmt.Println("*** Wait")
 	if *nowait == false {
 		err := c.Wait(cluster, service, &arn)
 		if err != nil {

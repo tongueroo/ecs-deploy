@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
+
+	"reflect"
 )
 
 type Client struct {
@@ -18,6 +20,7 @@ type Client struct {
 }
 
 func New(region *string, logger *log.Logger) *Client {
+	logger.Printf("client.New")
 	sess := session.New(&aws.Config{Region: region})
 	svc := ecs.New(sess)
 	return &Client{
@@ -29,24 +32,41 @@ func New(region *string, logger *log.Logger) *Client {
 
 // RegisterTaskDefinition updates the existing task definition's image.
 func (c *Client) RegisterTaskDefinition(task, image, tag *string) (string, error) {
+	fmt.Println("*** RegisterTaskDefinition")
 	defs, err := c.GetContainerDefinitions(task)
 	if err != nil {
 		return "", err
 	}
+
+	fmt.Println(reflect.TypeOf(defs))
+	fmt.Printf("defs %s\n", defs)
 	for _, d := range defs {
+		fmt.Println(reflect.TypeOf(d))
 		if strings.HasPrefix(*d.Image, *image) {
 			i := fmt.Sprintf("%s:%s", *image, *tag)
+			fmt.Printf("new image name %s\n", i)
 			d.Image = &i
 		}
+		d.Memory = 128
 	}
+
+
+	fmt.Println("*** RegisterTaskDefinition 2")
+
 	input := &ecs.RegisterTaskDefinitionInput{
 		Family:               task,
 		ContainerDefinitions: defs,
 	}
+
+	fmt.Println("*** RegisterTaskDefinition 3")
+
 	resp, err := c.svc.RegisterTaskDefinition(input)
 	if err != nil {
 		return "", err
 	}
+
+	fmt.Println("*** RegisterTaskDefinition 4")
+
 	return *resp.TaskDefinition.TaskDefinitionArn, nil
 }
 
@@ -105,11 +125,21 @@ func (c *Client) GetDeployment(cluster, service, arn *string) (*ecs.Deployment, 
 
 // GetContainerDefinitions get container definitions of the service.
 func (c *Client) GetContainerDefinitions(task *string) ([]*ecs.ContainerDefinition, error) {
+	fmt.Println("*** GetContainerDefinitions")
 	output, err := c.svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: task,
 	})
+	fmt.Println("*** GetContainerDefinitions2")
+	fmt.Println(task)
+	// fmt.Printf("%+v\n", task)
+	// fmt.Printf("%#v\n", task)
+	// fmt.Printf("%T\n", task)
+	fmt.Printf("%s\n", task)
+	// fmt.Printf("%q\n", task)
+	// fmt.Printf("%x\n", task)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("*** GetContainerDefinitions3")
 	return output.TaskDefinition.ContainerDefinitions, nil
 }
