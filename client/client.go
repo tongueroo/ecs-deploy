@@ -47,7 +47,8 @@ func (c *Client) RegisterTaskDefinition(task, image, tag *string) (string, error
 			fmt.Printf("new image name %s\n", i)
 			d.Image = &i
 		}
-		d.Memory = 128
+		memory := int64(128)
+		d.Memory = &memory
 	}
 
 
